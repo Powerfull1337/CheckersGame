@@ -36,10 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.checkersgame.Config
-import com.example.checkersgame.GameCard
-import com.example.checkersgame.client
-import com.example.checkersgame.models.GameLobbyItem
+import com.example.checkersgame.data.KtorClient.client
+import com.example.checkersgame.presentation.core.Config
+import com.example.checkersgame.data.models.GameLobbyItem
+import com.example.checkersgame.presentation.components.GameCard
 import com.example.checkersgame.ui.theme.BackgroundColor
 import com.example.checkersgame.ui.theme.BoardBrownDark
 import com.example.checkersgame.ui.theme.PieceHostColor

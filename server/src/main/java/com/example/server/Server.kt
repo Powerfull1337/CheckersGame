@@ -11,6 +11,13 @@ import io.ktor.server.routing.*
 import io.ktor.server.websocket.*
 import java.time.Duration
 
+
+
+// ПОЯСНЕННЯ (Ngrok):
+// Оскільки сервер запущено локально на ноутбуці (localhost:8080),
+// реальний Android-телефон не може до нього підключитися напряму через USB/Wi-Fi без налаштування мережі.
+// Тому використовується сервіс Ngrok(https://ngrok.com/docs/start) для тунелювання локального сервера в публічний інтернет.
+
 fun main() {
    DatabaseFactory.init()
 

@@ -4,6 +4,29 @@ import io.github.cdimascio.dotenv.dotenv
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
+
+
+object DatabaseFactory {
+   fun init() {
+      val dotenv = dotenv {
+         ignoreIfMissing = true
+         directory = "./"
+      }
+      val dbUrl = dotenv["DB_URL"] ?: System.getenv("DB_URL")
+      val dbUser = dotenv["DB_USER"] ?: System.getenv("DB_USER")
+      val dbPassword = dotenv["DB_PASSWORD"] ?: System.getenv("DB_PASSWORD")
+
+      Database.connect(url = dbUrl, driver = "org.postgresql.Driver", user = dbUser, password = dbPassword)
+
+      transaction {
+
+         // SchemaUtils.drop(Games)
+         // SchemaUtils.drop(Users)
+
+         SchemaUtils.create(Users, Games)
+      }
+   }
+}
 object Users : Table() {
    val id = integer("id").autoIncrement()
    val name = varchar("name", 50)
@@ -19,31 +42,9 @@ object Games : Table() {
    val winnerName = varchar("winner_name", 50).nullable()
    val date = long("date").default(System.currentTimeMillis())
 
-   // --- НОВІ ПОЛЯ ДЛЯ "М'ЯКОГО" ВИДАЛЕННЯ ---
    val deletedByHost = bool("deleted_by_host").default(false)
    val deletedByGuest = bool("deleted_by_guest").default(false)
 
    override val primaryKey = PrimaryKey(id)
 }
 
-object DatabaseFactory {
-   fun init() {
-      val dotenv = dotenv {
-         ignoreIfMissing = true
-         directory = "./"
-      }
-      val dbUrl = dotenv["DB_URL"] ?: System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/checkers_db"
-      val dbUser = dotenv["DB_USER"] ?: System.getenv("DB_USER") ?: "postgres"
-      val dbPassword = dotenv["DB_PASSWORD"] ?: System.getenv("DB_PASSWORD") ?: "den90002"
-
-      Database.connect(url = dbUrl, driver = "org.postgresql.Driver", user = dbUser, password = dbPassword)
-
-      transaction {
-
-         // SchemaUtils.drop(Games)
-         // SchemaUtils.drop(Users)
-
-         SchemaUtils.create(Users, Games)
-      }
-   }
-}

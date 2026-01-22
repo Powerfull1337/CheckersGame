@@ -35,10 +35,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.checkersgame.Config
-import com.example.checkersgame.client
-import com.example.checkersgame.models.AuthRequest
-import com.example.checkersgame.models.AuthResponse
+import com.example.checkersgame.data.KtorClient.client
+import com.example.checkersgame.presentation.core.Config
+import com.example.checkersgame.data.models.AuthRequest
+import com.example.checkersgame.data.models.AuthResponse
 import com.example.checkersgame.ui.theme.BoardBrownDark
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody

@@ -37,7 +37,16 @@ fun Route.gameRoutes() {
          }.map { g ->
             val host = transaction { Users.select { Users.id eq g.player1Id }.single()[Users.name] }
             val isMine = (uid != null && (g.player1Id == uid || g.player2Id == uid))
-            GameLobbyItem(g.dbGameId, host, isMine)
+
+            val onlineCount = g.sessions.size
+
+            GameLobbyItem(
+               gameId = g.dbGameId,
+               hostName = host,
+               isMyGame = isMine,
+               playerCount = onlineCount,
+               destroyAt = g.cleanupDeadline
+            )
          }
          call.respond(list)
       } catch (e: Exception) { call.respond(emptyList<GameLobbyItem>()) }
@@ -106,26 +115,28 @@ fun Route.gameRoutes() {
       val uid = call.request.queryParameters["userId"]?.toInt() ?: return@webSocket
       val g = GameManager.activeGames[socketGid] ?: return@webSocket
 
-      if (g.player2Id != null && uid != g.player1Id && uid != g.player2Id) {
-         close(CloseReason(CloseReason.Codes.VIOLATED_POLICY, "Game is full"))
-         return@webSocket
-      }
-
       g.cleanupJob?.cancel()
       g.cleanupJob = null
+      g.cleanupDeadline = null
 
       if (g.player2Id == null && uid != g.player1Id) {
          g.player2Id = uid
          try { transaction { Games.update({ Games.id eq g.dbGameId }) { it[guestId] = uid } } } catch (e: Exception) {}
       }
 
+
+      g.sessions[uid]?.close(CloseReason(CloseReason.Codes.NORMAL, "Reconnected"))
+
+
       g.sessions[uid] = this
+
       GameManager.broadcastGameState(g)
 
       try {
          for (frame in incoming) {
             if (frame is Frame.Text) {
                val text = frame.readText()
+
                if (text == "REMATCH") {
                   GameManager.processRematch(g, uid)
                } else {
@@ -138,10 +149,16 @@ fun Route.gameRoutes() {
                }
             }
          }
+      } catch (e: Exception) {
+
       } finally {
-         g.sessions.remove(uid)
-         GameManager.broadcastGameState(g)
-         GameManager.scheduleCleanup(socketGid)
+
+         if (g.sessions[uid] == this) {
+            g.sessions.remove(uid)
+
+            GameManager.broadcastGameState(g)
+            GameManager.scheduleCleanup(socketGid)
+         }
       }
    }
 }

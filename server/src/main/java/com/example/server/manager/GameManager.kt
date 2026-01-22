@@ -10,6 +10,7 @@ import io.ktor.websocket.send
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -23,9 +24,17 @@ import kotlin.math.abs
 object GameManager {
    val activeGames = ConcurrentHashMap<Int, ActiveGame>()
    suspend fun broadcastGameState(g: ActiveGame) {
-      g.sessions.forEach { (uid, session) ->
+
+      val currentSessions = g.sessions.toMap()
+
+      currentSessions.forEach { (uid, session) ->
+
+         if (!session.isActive) return@forEach
+
          try {
             val opponentId = if (uid == g.player1Id) g.player2Id else g.player1Id
+
+
             val isOpponentOnline = if (opponentId != null) g.sessions.containsKey(opponentId) else false
 
             val state = GameState(
@@ -37,8 +46,11 @@ object GameManager {
                g.rematchRequested.size,
                isOpponentConnected = isOpponentOnline
             )
-            session.send(Json.Default.encodeToString(state))
-         } catch (e: Exception) { /* Log error */ }
+            session.send(Json.encodeToString(state))
+         } catch (e: Exception) {
+
+            g.sessions.remove(uid)
+         }
       }
    }
 
@@ -112,11 +124,14 @@ object GameManager {
    fun scheduleCleanup(gameId: Int) {
       val g = activeGames[gameId] ?: return
       if (g.sessions.isEmpty()) {
+
+         g.cleanupDeadline = System.currentTimeMillis() + 180_000
+
          g.cleanupJob = CoroutineScope(Dispatchers.Default).launch {
             delay(180_000)
             if (g.sessions.isEmpty()) {
                activeGames.remove(gameId)
-               println("Game $gameId destroyed due to inactivity")
+               println("Game $gameId destroyed")
             }
          }
       }

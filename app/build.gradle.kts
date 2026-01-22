@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
    alias(libs.plugins.android.application)
    alias(libs.plugins.kotlin.android)
@@ -5,11 +8,16 @@ plugins {
    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.0"
 }
 
+
+val env = Properties()
+val envFile = rootProject.file(".env")
+if (envFile.exists()) {
+   env.load(FileInputStream(envFile))
+}
+
 android {
    namespace = "com.example.checkersgame"
-   compileSdk {
-      version = release(36)
-   }
+   compileSdk = 36
 
    defaultConfig {
       applicationId = "com.example.checkersgame"
@@ -19,6 +27,11 @@ android {
       versionName = "1.0"
 
       testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+
+      val hostUrl = env.getProperty("HOST_URL") ?: "http://10.0.2.2:8080"
+
+      buildConfigField("String", "HOST_URL", "\"$hostUrl\"")
    }
 
    buildTypes {
@@ -36,6 +49,8 @@ android {
    }
    buildFeatures {
       compose = true
+
+      buildConfig = true
    }
 }
 
@@ -55,7 +70,6 @@ dependencies {
    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
    debugImplementation(libs.androidx.compose.ui.tooling)
    debugImplementation(libs.androidx.compose.ui.test.manifest)
-
 
    implementation("io.ktor:ktor-client-core:2.3.7")
    implementation("io.ktor:ktor-client-cio:2.3.7")

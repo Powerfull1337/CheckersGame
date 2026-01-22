@@ -33,10 +33,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.checkersgame.Config
-import com.example.checkersgame.HistoryItemCard
-import com.example.checkersgame.client
-import com.example.checkersgame.models.HistoryItem
+import com.example.checkersgame.data.KtorClient.client
+import com.example.checkersgame.presentation.core.Config
+
+import com.example.checkersgame.data.models.HistoryItem
+import com.example.checkersgame.presentation.components.HistoryItemCard
 import com.example.checkersgame.ui.theme.BoardBrownDark
 import com.example.checkersgame.ui.theme.PieceGuestColor
 import io.ktor.client.request.delete
