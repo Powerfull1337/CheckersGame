@@ -39,6 +39,7 @@ import com.example.checkersgame.data.KtorClient.client
 import com.example.checkersgame.presentation.core.Config
 import com.example.checkersgame.data.models.AuthRequest
 import com.example.checkersgame.data.models.AuthResponse
+import com.example.checkersgame.presentation.core.TokenManager
 import com.example.checkersgame.ui.theme.BoardBrownDark
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -50,38 +51,58 @@ import kotlinx.serialization.json.Json
 
 @Composable
 fun LoginScreen(onSuccess: (Int) -> Unit) {
+   // State for input fields
    var name by remember { mutableStateOf("") }
    var pin by remember { mutableStateOf("") }
    var isLoading by remember { mutableStateOf(false) }
+
    val scope = rememberCoroutineScope()
    val context = LocalContext.current
 
+   // Centered Layout
    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+
+      // Floating Card UI
       Card(
          modifier = Modifier.fillMaxWidth(0.85f).shadow(12.dp, RoundedCornerShape(24.dp)),
          colors = CardDefaults.cardColors(containerColor = Color.White)
       ) {
          Column(modifier = Modifier.padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+
+            // Header
             Icon(Icons.Default.AccountCircle, null, Modifier.size(80.dp), tint = BoardBrownDark)
             Spacer(Modifier.height(16.dp))
             Text("Checkers Online", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = BoardBrownDark)
+
+            // Inputs
             Spacer(Modifier.height(32.dp))
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Нікнейм") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
             Spacer(Modifier.height(16.dp))
             OutlinedTextField(value = pin, onValueChange = { if (it.length <= 4) pin = it }, label = { Text("PIN-код") }, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp))
+
             Spacer(Modifier.height(32.dp))
+
             if (isLoading) CircularProgressIndicator(color = BoardBrownDark)
             else Button(
                onClick = {
                   isLoading = true
                   scope.launch {
                      try {
+                        // 1. Send Login Request
                         val response = client.post("${Config.HOST_URL}/auth") {
                            contentType(ContentType.Application.Json)
                            setBody(AuthRequest(name, pin))
                         }
-                        onSuccess(Json.decodeFromString<AuthResponse>(response.bodyAsText()).userId)
-                     } catch (e: Exception) { Toast.makeText(context, "Error", Toast.LENGTH_LONG).show() } finally { isLoading = false }
+                        val auth = Json.decodeFromString<AuthResponse>(response.bodyAsText())
+
+                        // 2. Save JWT Token securely
+                        TokenManager.saveAuth(auth.token, auth.userId)
+
+                        // 3. Navigate to Lobby
+                        onSuccess(auth.userId)
+                     } catch (e: Exception) {
+                        Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                     } finally { isLoading = false }
                   }
                },
                modifier = Modifier.fillMaxWidth().height(56.dp),

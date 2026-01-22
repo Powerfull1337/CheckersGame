@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
-import com.example.checkersgame.presentation.core.Config
+import com.example.checkersgame.presentation.core.TokenManager
 import com.example.checkersgame.presentation.navigation.CheckersNavGraph
 import com.example.checkersgame.ui.theme.BackgroundColor
 import com.example.checkersgame.ui.theme.BoardBrownDark
@@ -18,9 +18,7 @@ import com.example.checkersgame.ui.theme.PieceGuestColor
 class MainActivity : ComponentActivity() {
    override fun onCreate(savedInstanceState: Bundle?) {
       super.onCreate(savedInstanceState)
-      android.util.Log.e("MY_DEBUG", "------------------------------------")
-      android.util.Log.e("MY_DEBUG", "MY URL IS: ${Config.HOST_URL}")
-      android.util.Log.e("MY_DEBUG", "------------------------------------")
+      TokenManager.init(this)
       setContent {
          MaterialTheme(
             colorScheme = lightColorScheme(
@@ -30,10 +28,7 @@ class MainActivity : ComponentActivity() {
                surface = CardColor
             )
          ) {
-            Surface(
-               modifier = Modifier.fillMaxSize(),
-               color = MaterialTheme.colorScheme.background
-            ) {
+            Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                CheckersNavGraph()
             }
          }

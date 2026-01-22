@@ -58,10 +58,12 @@ fun LobbyScreen(userId: Int, onJoin: (Int) -> Unit, onHistory: () -> Unit) {
    val scope = rememberCoroutineScope()
    val context = LocalContext.current
 
+   // Polling Loop: Refreshes the game list every 3 seconds
    LaunchedEffect(Unit) {
       while(isActive) {
          try {
-            val response = client.get("${Config.HOST_URL}/lobby?userId=$userId")
+            // Token is auto-injected by KtorClient
+            val response = client.get("${Config.HOST_URL}/lobby")
             games = Json.decodeFromString(response.bodyAsText())
          } catch (e: Exception) {}
          delay(3000)
@@ -77,11 +79,13 @@ fun LobbyScreen(userId: Int, onJoin: (Int) -> Unit, onHistory: () -> Unit) {
          )
       },
       floatingActionButton = {
+         // Create New Game Button
          ExtendedFloatingActionButton(
             onClick = {
                scope.launch {
                   try {
-                     val response = client.post("${Config.HOST_URL}/create?userId=$userId")
+                     // POST creates game -> returns ID -> Navigate to GameScreen
+                     val response = client.post("${Config.HOST_URL}/create")
                      val gameId = response.bodyAsText().substringAfter("gameId\":").substringBefore("}").toInt()
                      onJoin(gameId)
                   } catch (e: Exception) { Toast.makeText(context, "Error", Toast.LENGTH_SHORT).show() }
@@ -92,6 +96,8 @@ fun LobbyScreen(userId: Int, onJoin: (Int) -> Unit, onHistory: () -> Unit) {
       }
    ) { padding ->
       Column(modifier = Modifier.fillMaxSize().padding(padding).background(BackgroundColor)) {
+
+         // Empty State or List State
          if (games.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -3,21 +3,10 @@ package com.example.checkersgame.presentation.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -27,18 +16,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.checkersgame.ui.theme.BoardBrownDark
-import com.example.checkersgame.ui.theme.BoardBrownLight
-import com.example.checkersgame.ui.theme.HighlightColor
-import com.example.checkersgame.ui.theme.PieceGuestColor
-import com.example.checkersgame.ui.theme.PieceHostColor
+import com.example.checkersgame.ui.theme.*
 
 @Composable
 fun BoardGrid(board: List<List<Int>>, isHost: Boolean, onMove: (Int, Int, Int, Int) -> Unit) {
+   // State to track the currently selected piece (for moving)
    var selX by remember { mutableStateOf<Int?>(null) }
    var selY by remember { mutableStateOf<Int?>(null) }
 
    Column(Modifier.fillMaxSize()) {
+      // Rotate board: Host sees 0..7, Guest sees 7..0 (inverted view)
       val yRange = if (isHost) 0..7 else 7 downTo 0
       val xRange = if (isHost) 0..7 else 7 downTo 0
 
@@ -48,18 +35,22 @@ fun BoardGrid(board: List<List<Int>>, isHost: Boolean, onMove: (Int, Int, Int, I
                val piece = board[y][x]
                val isBlackCell = (x + y) % 2 != 0
                val isSelected = selX == x && selY == y
+
                val bgColor = when {
-                  isSelected -> HighlightColor
+                  isSelected -> HighlightColor // Highlight selected cell
                   isBlackCell -> BoardBrownDark
                   else -> BoardBrownLight
                }
 
                Box(
                   modifier = Modifier.weight(1f).fillMaxHeight().background(bgColor).clickable(enabled = isBlackCell) {
+                     // Click Logic:
                      if (selX != null && piece == 0) {
+                        // 1. Move: Piece selected + Clicked empty cell -> Move
                         onMove(selX!!, selY!!, x, y)
                         selX = null; selY = null
                      } else if (piece != 0) {
+                        // 2. Select: Clicked own piece -> Select it
                         val isMyPiece = (isHost && piece == 1) || (!isHost && piece == 2)
                         if (isMyPiece) { selX = x; selY = y }
                      }
@@ -72,8 +63,10 @@ fun BoardGrid(board: List<List<Int>>, isHost: Boolean, onMove: (Int, Int, Int, I
       }
    }
 }
+
 @Composable
 fun CheckersPiece(color: Color) {
+   // Draw piece with radial gradient and shadow for 3D effect
    Box(
       modifier = Modifier.fillMaxSize(0.85f).shadow(6.dp, CircleShape)
          .background(brush = Brush.radialGradient(colors = listOf(color.copy(alpha = 0.8f), color)), shape = CircleShape)
@@ -83,8 +76,10 @@ fun CheckersPiece(color: Color) {
       Box(modifier = Modifier.fillMaxSize(0.6f).border(1.dp, Color.Black.copy(alpha = 0.2f), CircleShape))
    }
 }
+
 @Composable
 fun BoardLetters(isHost: Boolean) {
+   // Renders A-H labels at top/bottom
    Row(Modifier.width(300.dp)) {
       val range = if (isHost) 0..7 else 7 downTo 0
       for (i in range) {
@@ -95,6 +90,7 @@ fun BoardLetters(isHost: Boolean) {
 
 @Composable
 fun BoardNumbers(isHost: Boolean) {
+   // Renders 1-8 labels at sides
    Column(Modifier.height(300.dp)) {
       val range = if (isHost) 0..7 else 7 downTo 0
       for (i in range) {

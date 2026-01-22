@@ -45,21 +45,24 @@ import kotlinx.serialization.json.Json
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
+   // State variables for game logic
    var board by remember { mutableStateOf<List<List<Int>>>(emptyList()) }
-   var turnId by remember { mutableStateOf(0) }
+   var turnId by remember { mutableIntStateOf(0) }
    var opponentId by remember { mutableStateOf<Int?>(null) }
-   var hostId by remember { mutableStateOf(0) }
+   var hostId by remember { mutableIntStateOf(0) }
    var winnerId by remember { mutableStateOf<Int?>(null) }
-   var rematchCount by remember { mutableStateOf(0) }
+   var rematchCount by remember { mutableIntStateOf(0) }
    var isOpponentConnected by remember { mutableStateOf(true) }
 
+   // UI State
    var statusText by remember { mutableStateOf("Підключення...") }
    var wsSession by remember { mutableStateOf<DefaultClientWebSocketSession?>(null) }
-   var connectionKey by remember { mutableIntStateOf(0) }
+   var connectionKey by remember { mutableIntStateOf(0) } // Used to force reconnection
 
    val scope = rememberCoroutineScope()
    val context = LocalContext.current
 
+   // Toast notifications for connection status
    LaunchedEffect(isOpponentConnected) {
       if (!isOpponentConnected && opponentId != null) {
          Toast.makeText(context, "Суперник втратив зв'язок!", Toast.LENGTH_LONG).show()
@@ -68,17 +71,23 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
       }
    }
 
+   // WebSocket Connection Loop
    LaunchedEffect(gameId, connectionKey) {
       while (isActive) {
          try {
+            // Convert HTTP URL to WebSocket URL (http->ws, https->wss)
             val wsUrl = Config.HOST_URL.replace("http", "ws").replace("https", "wss")
-            KtorClient.client.webSocket("$wsUrl/game/$gameId?userId=$userId") {
+
+            KtorClient.client.webSocket("$wsUrl/game/$gameId") {
                wsSession = this
                statusText = "Підключено!"
+
+               // Listen for incoming GameState updates
                for (frame in incoming) {
                   if (frame is Frame.Text) {
                      try {
                         val state = Json.decodeFromString<GameState>(frame.readText())
+                        // Update local state
                         board = state.board
                         turnId = state.turnPlayerId
                         opponentId = state.player2Id
@@ -87,6 +96,7 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
                         rematchCount = state.rematchRequests
                         isOpponentConnected = state.isOpponentConnected
 
+                        // Update Status Text based on game state
                         statusText = when {
                            opponentId == null -> "Очікуємо суперника..."
                            !isOpponentConnected -> "СУПЕРНИК ВІДКЛЮЧИВСЯ"
@@ -100,12 +110,12 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
             }
          } catch (e: Exception) {
             statusText = "Відновлення з'єднання..."
-            delay(3000)
+            delay(3000) // Retry delay
          }
       }
    }
 
-
+   // Game Over Dialog (Victory/Defeat/Rematch)
    if (winnerId != null) {
       AlertDialog(
          onDismissRequest = {},
@@ -132,7 +142,6 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
       topBar = {
          TopAppBar(
             title = {
-
                Column {
                   Text("Гра #$gameId", fontWeight = FontWeight.Bold)
                   if (!isOpponentConnected && opponentId != null) {
@@ -144,7 +153,7 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
                IconButton(onClick = {
                   Toast.makeText(context, "Перепідключення...", Toast.LENGTH_SHORT).show()
                   wsSession?.cancel()
-                  connectionKey++
+                  connectionKey++ // Trigger reconnection
                }) { Icon(Icons.Default.Refresh, "Refresh", tint = Color.White) }
             },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = BoardBrownDark, titleContentColor = Color.White)
@@ -152,15 +161,12 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
       }
    ) { padding ->
       Column(
-         Modifier
-            .fillMaxSize()
-            .background(BackgroundColor)
-            .padding(padding)
-            .padding(16.dp),
+         Modifier.fillMaxSize().background(BackgroundColor).padding(padding).padding(16.dp),
          horizontalAlignment = Alignment.CenterHorizontally,
          verticalArrangement = Arrangement.Center
       ) {
 
+         // Dynamic status bar color
          val statusColor by animateColorAsState(targetValue = when {
             !isOpponentConnected && opponentId != null -> Color.Red
             statusText == "ВАШ ХІД" -> Color(0xFF4CAF50)
@@ -170,27 +176,22 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
             else -> BoardBrownDark
          }, label = "color")
 
-
+         // Status Bar
          Surface(
             color = statusColor,
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.padding(bottom = 24.dp).shadow(6.dp, RoundedCornerShape(24.dp))
          ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 32.dp, vertical = 12.dp)) {
-
                if (!isOpponentConnected && opponentId != null) {
                   Icon(Icons.Default.Warning, null, tint = Color.White)
                   Spacer(Modifier.width(8.dp))
                }
-               Text(
-                  text = statusText,
-                  color = Color.White,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 20.sp
-               )
+               Text(text = statusText, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
          }
 
+         // Board Area
          if (board.isNotEmpty()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.shadow(12.dp).background(BoardBrownDark).padding(8.dp)) {
                val isHost = userId == hostId
@@ -198,9 +199,11 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
                Row {
                   BoardNumbers(isHost)
                   Box(modifier = Modifier.size(300.dp).border(2.dp, Color.Black)) {
-                     BoardGrid(board, isHost) { fx, fy, tx, ty ->
-                        if (winnerId != null) return@BoardGrid
 
+                     // The main grid
+                     BoardGrid(board, isHost) { fx, fy, tx, ty ->
+                        // Prevent moves if game over or paused
+                        if (winnerId != null) return@BoardGrid
                         if (opponentId != null && !isOpponentConnected) {
                            Toast.makeText(context, "Зачекайте повернення суперника!", Toast.LENGTH_SHORT).show()
                            return@BoardGrid
@@ -209,17 +212,16 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
                         if (opponentId == null) {
                            Toast.makeText(context, "Чекаємо другого гравця...", Toast.LENGTH_SHORT).show()
                         } else if (turnId == userId) {
+                           // SEND MOVE TO SERVER
                            scope.launch { wsSession?.send(Frame.Text(Json.encodeToString(MoveRequest(fx, fy, tx, ty)))) }
                         } else {
                            Toast.makeText(context, "Зачекайте...", Toast.LENGTH_SHORT).show()
                         }
                      }
 
+                     // Pause Overlay if opponent disconnects
                      if (opponentId != null && !isOpponentConnected) {
-                        Box(
-                           modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)),
-                           contentAlignment = Alignment.Center
-                        ) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)), contentAlignment = Alignment.Center) {
                            Text("ПАУЗА", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 32.sp)
                         }
                      }

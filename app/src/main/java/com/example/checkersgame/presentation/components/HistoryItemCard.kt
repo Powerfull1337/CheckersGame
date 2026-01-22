@@ -32,11 +32,13 @@ import com.example.checkersgame.ui.theme.PieceHostColor
 
 @Composable
 fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
+   // State to toggle the moves list visibility
    var expanded by remember { mutableStateOf(false) }
 
+   // Parse raw move string (e.g., "0,1->1,2") into readable objects only when item changes
    val parsedMoves = remember(item.moves) { parseMoveHistory(item.moves) }
 
-
+   // Visual cues for game status (Gray = Active, Gold = Finished)
    val statusColor = if (item.winner == "В процесі") Color.Gray else HighlightColor
    val statusIcon = if (item.winner == "В процесі") Icons.Default.PlayArrow else Icons.Default.Star
 
@@ -45,14 +47,14 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
          .fillMaxWidth()
          .padding(vertical = 4.dp)
          .shadow(4.dp, RoundedCornerShape(16.dp))
-         .clickable { expanded = !expanded },
+         .clickable { expanded = !expanded }, // Toggle expand on click
       colors = CardDefaults.cardColors(containerColor = Color.White),
       shape = RoundedCornerShape(16.dp)
    ) {
       Column(Modifier.padding(16.dp)) {
 
+         // --- Header: Opponent Name & Result ---
          Row(verticalAlignment = Alignment.CenterVertically) {
-
             Surface(
                shape = CircleShape,
                color = statusColor.copy(alpha = 0.1f),
@@ -80,6 +82,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
                )
             }
 
+            // Arrow icon changes based on state
             Icon(
                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                contentDescription = null,
@@ -87,7 +90,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
             )
          }
 
-
+         // --- Expanded Content: Move List ---
          if (expanded) {
             Spacer(Modifier.height(16.dp))
             HorizontalDivider(color = Color.LightGray.copy(alpha = 0.5f))
@@ -116,10 +119,10 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
                      .border(1.dp, Color.LightGray.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
                      .clip(RoundedCornerShape(8.dp))
                ) {
+                  // Render each move row
                   parsedMoves.forEachIndexed { index, move ->
-
+                     // Alternating background for better readability
                      val bgColor = if (index % 2 == 0) Color(0xFFF5F5F5) else Color.White
-
 
                      val pieceColor = if (move.isHostMove) PieceHostColor else PieceGuestColor
                      val playerLabel = if (move.isHostMove) "Хост" else "Гість"
@@ -131,7 +134,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
                            .background(bgColor)
                            .padding(horizontal = 12.dp, vertical = 8.dp)
                      ) {
-
+                        // Move Number
                         Text(
                            text = "${move.number}.",
                            fontSize = 12.sp,
@@ -139,7 +142,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
                            modifier = Modifier.width(24.dp)
                         )
 
-
+                        // Color Indicator
                         Box(
                            modifier = Modifier
                               .size(12.dp)
@@ -149,7 +152,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
 
                         Spacer(Modifier.width(8.dp))
 
-
+                        // Move Notation (e.g. A3 -> B4)
                         Text(
                            text = move.text,
                            fontSize = 14.sp,
@@ -160,7 +163,7 @@ fun HistoryItemCard(item: HistoryItem, currentUserId: Int) {
 
                         Spacer(Modifier.weight(1f))
 
-
+                        // Player Label
                         Text(
                            text = playerLabel,
                            fontSize = 10.sp,

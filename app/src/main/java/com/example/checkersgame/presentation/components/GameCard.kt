@@ -14,24 +14,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.checkersgame.data.models.GameLobbyItem
-import com.example.checkersgame.ui.theme.BoardBrownDark
-import com.example.checkersgame.ui.theme.BoardBrownLight
-import com.example.checkersgame.ui.theme.HighlightColor
+import com.example.checkersgame.ui.theme.*
 import kotlinx.coroutines.delay
 
 @Composable
 fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
+   // Check if the game is scheduled for deletion (host left)
    val isDying = game.destroyAt != null
    var timeLeft by remember { mutableStateOf(0L) }
 
-
+   // Countdown timer logic for abandoned games
    if (isDying) {
       LaunchedEffect(game.destroyAt) {
          while (true) {
@@ -42,6 +39,7 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
       }
    }
 
+   // Styling based on state (Red background if dying, Highlight border if my game)
    val cardColor = if (isDying) Color(0xFFFFEBEE) else Color.White
    val borderColor = if (game.isMyGame) HighlightColor else Color.Transparent
 
@@ -57,8 +55,8 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
    ) {
       Column(modifier = Modifier.padding(16.dp)) {
 
+         // --- Header Row (Avatar + Name) ---
          Row(verticalAlignment = Alignment.CenterVertically) {
-
             Surface(
                shape = CircleShape,
                color = BoardBrownLight,
@@ -76,7 +74,6 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
 
             Spacer(Modifier.width(12.dp))
 
-
             Column(Modifier.weight(1f)) {
                Text(
                   text = game.hostName,
@@ -84,19 +81,12 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
                   fontSize = 18.sp,
                   color = BoardBrownDark
                )
-
-
                Row(verticalAlignment = Alignment.CenterVertically) {
                   Icon(Icons.Default.Person, null, modifier = Modifier.size(14.dp), tint = Color.Gray)
                   Spacer(Modifier.width(4.dp))
-                  Text(
-                     text = "${game.playerCount}/2 гравців",
-                     fontSize = 13.sp,
-                     color = Color.Gray
-                  )
+                  Text(text = "${game.playerCount}/2 гравців", fontSize = 13.sp, color = Color.Gray)
                }
             }
-
 
             if (game.isMyGame) {
                Badge(containerColor = HighlightColor) {
@@ -105,7 +95,9 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
             }
          }
 
+         // --- Footer Section ---
          if (isDying) {
+            // Warning view for abandoned games
             Spacer(Modifier.height(12.dp))
             HorizontalDivider(color = Color.Red.copy(alpha = 0.2f))
             Spacer(Modifier.height(8.dp))
@@ -130,7 +122,7 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
                }
             }
          } else {
-
+            // Action button for active games
             Spacer(Modifier.height(12.dp))
             Button(
                onClick = { onJoin(game.gameId) },
@@ -147,6 +139,7 @@ fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
    }
 }
 
+// Helper to format seconds into MM:SS
 fun formatTime(seconds: Long): String {
    val m = seconds / 60
    val s = seconds % 60

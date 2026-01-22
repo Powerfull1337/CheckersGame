@@ -25,4 +25,5 @@ dependencies {
    implementation("org.postgresql:postgresql:42.6.0")
    implementation("ch.qos.logback:logback-classic:1.4.14")
    implementation("io.github.cdimascio:dotenv-kotlin:6.4.1")
+   implementation("io.ktor:ktor-server-auth-jwt:2.3.7")
 }

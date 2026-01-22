@@ -35,7 +35,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.checkersgame.data.KtorClient.client
 import com.example.checkersgame.presentation.core.Config
-
 import com.example.checkersgame.data.models.HistoryItem
 import com.example.checkersgame.presentation.components.HistoryItemCard
 import com.example.checkersgame.ui.theme.BoardBrownDark
@@ -54,13 +53,16 @@ fun HistoryScreen(userId: Int, onBack: () -> Unit) {
    val scope = rememberCoroutineScope()
    val context = LocalContext.current
 
+   // 1. Fetch history when screen opens
    LaunchedEffect(Unit) {
       try {
-         val response = client.get("${Config.HOST_URL}/history?userId=$userId")
+         // Token is automatically added by KtorClient
+         val response = client.get("${Config.HOST_URL}/history")
          history = Json.decodeFromString(response.bodyAsText())
       } catch (e: Exception) {}
    }
 
+   // 2. Clear History Dialog
    if (showClearDialog) {
       AlertDialog(
          onDismissRequest = { showClearDialog = false },
@@ -70,7 +72,8 @@ fun HistoryScreen(userId: Int, onBack: () -> Unit) {
             Button(onClick = {
                scope.launch {
                   try {
-                     client.delete("${Config.HOST_URL}/history?userId=$userId")
+                     // Send soft-delete request
+                     client.delete("${Config.HOST_URL}/history")
                      history = emptyList()
                      Toast.makeText(context, "Очищено", Toast.LENGTH_SHORT).show()
                   } catch (e: Exception) {}
@@ -87,14 +90,18 @@ fun HistoryScreen(userId: Int, onBack: () -> Unit) {
          TopAppBar(
             title = { Text("Архів партій", fontWeight = FontWeight.Bold) },
             navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
+            // Show delete button only if history exists
             actions = { if (history.isNotEmpty()) IconButton(onClick = { showClearDialog = true }) { Icon(Icons.Default.Delete, null, tint = Color.White) } },
             colors = TopAppBarDefaults.topAppBarColors(containerColor = BoardBrownDark, titleContentColor = Color.White)
          )
       }
    ) { padding ->
-      if (history.isEmpty()) Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Історія порожня", color = Color.Gray) }
-      else LazyColumn(modifier = Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-         items(history) { item -> HistoryItemCard(item, userId) }
+      if (history.isEmpty()) {
+         Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) { Text("Історія порожня", color = Color.Gray) }
+      } else {
+         LazyColumn(modifier = Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(history) { item -> HistoryItemCard(item, userId) }
+         }
       }
    }
 }
