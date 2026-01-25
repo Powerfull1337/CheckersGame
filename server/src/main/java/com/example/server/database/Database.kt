@@ -16,9 +16,9 @@ object DatabaseFactory {
       Database.connect(url = dbUrl, driver = "org.postgresql.Driver", user = dbUser, password = dbPassword)
 
       transaction {
-         // Uncomment lines below to reset database schema
+
          // SchemaUtils.drop(Games)
-         // SchemaUtils.drop(Users)
+        //  SchemaUtils.drop(Users)
 
          // Create tables if they do not exist
          SchemaUtils.create(Users, Games)

@@ -4,6 +4,7 @@ import com.example.server.database.DatabaseFactory
 import com.example.server.manager.GameManager
 import com.example.server.routes.gameRoutes
 import com.example.server.util.JwtConfig
+import com.example.server.util.UserIdMiddleware
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
@@ -31,7 +32,7 @@ fun main() {
          maxFrameSize = Long.MAX_VALUE
          masking = false
       }
-
+      install(UserIdMiddleware)
       install(Authentication) {
          jwt("auth-jwt") {
             realm = "Checkers Game"

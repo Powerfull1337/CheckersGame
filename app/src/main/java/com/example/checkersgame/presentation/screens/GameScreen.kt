@@ -78,7 +78,7 @@ fun GameScreen(userId: Int, gameId: Int, onExit: () -> Unit) {
             // Convert HTTP URL to WebSocket URL (http->ws, https->wss)
             val wsUrl = Config.HOST_URL.replace("http", "ws").replace("https", "wss")
 
-            KtorClient.client.webSocket("$wsUrl/game/$gameId") {
+            KtorClient.client.webSocket("$wsUrl/game/$gameId?userId=$userId") {
                wsSession = this
                statusText = "Підключено!"
 

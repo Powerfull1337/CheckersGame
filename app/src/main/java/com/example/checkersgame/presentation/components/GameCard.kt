@@ -26,7 +26,7 @@ import kotlinx.coroutines.delay
 fun GameCard(game: GameLobbyItem, onJoin: (Int) -> Unit) {
    // Check if the game is scheduled for deletion (host left)
    val isDying = game.destroyAt != null
-   var timeLeft by remember { mutableStateOf(0L) }
+   var timeLeft by remember { mutableLongStateOf(0L) }
 
    // Countdown timer logic for abandoned games
    if (isDying) {

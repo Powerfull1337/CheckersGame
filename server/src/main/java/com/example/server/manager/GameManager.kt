@@ -173,13 +173,13 @@ object GameManager {
       broadcastGameState(g)
    }
 
-   // Removes game from memory if no players connected for 3 mins
+   // Removes game from memory if no players connected for 1 mins
    fun scheduleCleanup(gameId: Int) {
       val g = activeGames[gameId] ?: return
       if (g.sessions.isEmpty()) {
-         g.cleanupDeadline = System.currentTimeMillis() + 180_000 // 3 min
+         g.cleanupDeadline = System.currentTimeMillis() + 60_000 // 3 min
          g.cleanupJob = CoroutineScope(Dispatchers.Default).launch {
-            delay(180_000)
+            delay(60_000)
             if (g.sessions.isEmpty()) {
                activeGames.remove(gameId)
             }

@@ -40,15 +40,21 @@ fun Route.gameRoutes() {
    }
 
    // --- Protected Routes (Require JWT) ---
-   authenticate("auth-jwt") {
+   authenticate("auth-jwt", strategy = AuthenticationStrategy.Optional) {
 
       get("/lobby") {
-         val uid = call.userId
+         val uid = try { call.userId } catch (e: Exception) {
+            call.respond(HttpStatusCode.Unauthorized, "Missing or invalid userId/token")
+            return@get
+         }
          // Filter games: Only show open games or games where I am a player
          val list = GameManager.activeGames.values.filter {
             it.player2Id == null || (it.player1Id == uid || it.player2Id == uid)
          }.map { g ->
-            val host = transaction { Users.select { Users.id eq g.player1Id }.single()[Users.name] }
+            val host = transaction {
+               Users.select { Users.id eq g.player1Id }
+                  .singleOrNull()?.get(Users.name) ?: "Unknown"
+            }
             val isMine = (g.player1Id == uid || g.player2Id == uid)
             GameLobbyItem(g.dbGameId, host, isMine, g.sessions.size, g.cleanupDeadline)
          }
@@ -56,12 +62,14 @@ fun Route.gameRoutes() {
       }
 
       post("/create") {
-         val uid = call.userId
-         // Initialize standard board
+         val uid = try { call.userId } catch (e: Exception) {
+            call.respond(HttpStatusCode.Unauthorized, "Missing userId")
+            return@post
+         }
+
          val board = Array(8) { y -> IntArray(8) { x -> if ((x + y) % 2 != 0 && (y < 3 || y > 4)) if (y < 3) 2 else 1 else 0 } }
          val boardJson = Json.encodeToString(board.map { it.toList() })
 
-         // Create game in DB
          val gid = transaction {
             Games.insert {
                it[hostId] = uid
@@ -69,7 +77,6 @@ fun Route.gameRoutes() {
                it[currentTurn] = uid
             } get Games.id
          }
-         // Add to memory
          GameManager.activeGames[gid] = ActiveGame(gid, uid, null, board, uid)
          call.respond(mapOf("gameId" to gid))
       }
